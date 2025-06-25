@@ -52,5 +52,3 @@ Pie chart and total update automatically.
 
 ---
 
-## 📦 Folder Structure
-
