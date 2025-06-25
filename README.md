@@ -26,12 +26,6 @@ A simple yet powerful web application to help you manage your expenses visually 
 
 ---
 
-## 📷 Screenshots
-
-![Screenshot of Budget Tracker](https://via.placeholder.com/600x300.png?text=Budget+Tracker+App+Preview)
-
----
-
 ## 🧑‍💻 How to Use
 
 1. Clone this repository or download the `index.html` file.
