@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Smart Budget Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      /* Gradient background */
+      background: linear-gradient(135deg, #f8ffae 0%, #43c6ac 100%);
+    }
+
+    .container {
+      max-width: 600px;
+      margin: auto;
+      /* Gradient container */
+      background: linear-gradient(135deg, #ffffff 60%, #e0f7fa 100%);
+      padding: 30px;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(67, 198, 172, 0.15);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #333;
+      background: linear-gradient(90deg, #43c6ac, #191654);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input, button {
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      /* Gradient button */
+      background: linear-gradient(90deg, #43c6ac 0%, #191654 100%);
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s, box-shadow 0.3s;
+      box-shadow: 0 2px 8px rgba(67, 198, 172, 0.15);
+    }
+
+    button:hover {
+      background: linear-gradient(90deg, #191654 0%, #43c6ac 100%);
+      box-shadow: 0 4px 16px rgba(67, 198, 172, 0.25);
+    }
+
+    #expense-list ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    #expense-list li {
+      background: #f9f9f9;
+      margin: 5px 0;
+      padding: 10px 12px;
+      /* Gradient border */
+      border-left: 5px solid;
+      border-image: linear-gradient(180deg, #43c6ac, #191654) 1;
+      display: flex;
+      justify-content: space-between;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(67, 198, 172, 0.07);
+    }
+
+    .total {
+      font-weight: bold;
+      text-align: right;
+      margin-top: 10px;
+      font-size: 18px;
+      color: #444;
+      background: linear-gradient(90deg, #43c6ac, #191654);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    canvas {
+      margin-top: 30px;
+      /* Soft gradient shadow for chart */
+      box-shadow: 0 8px 32px rgba(67, 198, 172, 0.15);
+      border-radius: 12px;
+      background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%);
+    }
+
+    .delete-btn {
+      background: linear-gradient(90deg, #ff5858 0%, #f09819 100%);
+      color: white;
+      border: none;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .delete-btn:hover {
+      background: linear-gradient(90deg, #f09819 0%, #ff5858 100%);
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>💸 Budget Tracker</h1>
+
+    <form id="expense-form">
+      <input type="text" id="category" placeholder="Enter Category" required />
+      <input type="number" id="amount" placeholder="Enter Amount (₹)" required />
+      <button type="submit">Add Expense</button>
+    </form>
+
+    <div id="expense-list">
+      <h3>Expense List:</h3>
+      <ul id="list"></ul>
+      <div class="total" id="total-expense">Total: ₹0</div>
+    </div>
+
+    <canvas id="expense-chart"></canvas>
+  </div>
+
+  <script>
+    const form = document.getElementById('expense-form');
+    const list = document.getElementById('list');
+    const totalDisplay = document.getElementById('total-expense');
+    const ctx = document.getElementById('expense-chart').getContext('2d');
+
+    let expenses = JSON.parse(localStorage.getItem('expenses')) || [];
+
+    const chartData = {
+      labels: [],
+      datasets: [{
+        label: 'Expenses',
+        data: [],
+        backgroundColor: []
+      }]
+    };
+
+    const chart = new Chart(ctx, {
+      type: 'pie',
+      data: chartData,
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom' }
+        }
+      }
+    });
+
+    function randomColor() {
+      const r = Math.floor(Math.random() * 255);
+      const g = Math.floor(Math.random() * 255);
+      const b = Math.floor(Math.random() * 255);
+      return `rgba(${r}, ${g}, ${b}, 0.7)`;
+    }
+
+    function updateUI() {
+      list.innerHTML = '';
+      chartData.labels = [];
+      chartData.datasets[0].data = [];
+      chartData.datasets[0].backgroundColor = [];
+
+      let total = 0;
+
+      expenses.forEach((exp, index) => {
+        total += exp.amount;
+
+        // List
+        const li = document.createElement('li');
+        li.innerHTML = `${exp.category}: ₹${exp.amount} <button class="delete-btn" onclick="deleteExpense(${index})">X</button>`;
+        list.appendChild(li);
+
+        // Chart
+        chartData.labels.push(exp.category);
+        chartData.datasets[0].data.push(exp.amount);
+        chartData.datasets[0].backgroundColor.push(exp.color);
+      });
+
+      totalDisplay.textContent = `Total: ₹${total}`;
+      chart.update();
+      localStorage.setItem('expenses', JSON.stringify(expenses));
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const category = document.getElementById('category').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value);
+
+      if (!category || isNaN(amount) || amount <= 0) {
+        alert("Please enter valid details.");
+        return;
+      }
+
+      expenses.push({
+        category,
+        amount,
+        color: randomColor()
+      });
+
+      form.reset();
+      updateUI();
+    });
+
+    function deleteExpense(index) {
+      if (confirm("Are you sure you want to delete this expense?")) {
+        expenses.splice(index, 1);
+        updateUI();
+      }
+    }
+
+    // Load from storage on page load
+    updateUI();
+  </script>
+</body>
+</html>
